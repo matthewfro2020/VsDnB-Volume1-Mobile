@@ -209,6 +209,10 @@ class MainMenuState extends MusicBeatState
 			});
 		});
 
+		#if mobileC
+		addVirtualPad(LEFT_RIGHT, A_B);
+		#end
+
 		super.create();
 	}
 
@@ -239,7 +243,7 @@ class MainMenuState extends MusicBeatState
 			selectOption(curSelected);
 			canInteract = false;
 		}
-		if (back)
+		if (back #if android || FlxG.android.justReleased.BACK #end)
 		{
 			canInteract = false;
 			SoundController.play(Paths.sound('cancelMenu'));

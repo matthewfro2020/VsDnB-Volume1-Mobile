@@ -61,6 +61,10 @@ class Main extends Sprite
 	{
 		PolymodManager.initalize();
 
+		#if android
+		FlxG.android.preventDefaultKeys = [BACK]; // lol
+		#end
+
 		fps = new FPSDisplay(10, 3, 0xFFFFFF);
 		var fpsFormat = new TextFormat("Comic Sans MS Bold", 15, 0xFFFFFF, true);
 		fps.defaultTextFormat = fpsFormat;

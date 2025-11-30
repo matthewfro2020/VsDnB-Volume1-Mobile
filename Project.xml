@@ -22,7 +22,7 @@
 	<window if="mac" orientation="auto" fullscreen="false" resizable="true" vsync="false" allow-high-dpi="true" />
 
 	<!--Mobile-->
-	<window if="mobile" orientation="landscape" fullscreen="true" width="0" height="0" resizable="false"/>
+	<window if="mobile" orientation="landscape" fullscreen="true" resizable="false" allow-shaders="true" require-shaders="true" allow-high-dpi="true" />
 	<!-- _____________________________ Path Settings ____________________________ -->
 
 	<classpath name="source" />
@@ -41,10 +41,13 @@
 	<assets path='art/readme.txt' rename='PLEASE READ.txt' />
 	<assets path='art/icons' rename='icons' embed='true'/>
 	<assets path="assets/fonts" embed='true'/>
+	<assets path="mobile" rename="assets/mobile" if="mobileC" />
 
 	<define name="SHADERS_ENABLED"/>
 	<define name="PRELOAD_ALL" unless="web" />
 	<define name="NO_PRELOAD_ALL" unless="PRELOAD_ALL"/>
+
+	<define name="mobileC" if="mobile" /> <!--Can be added windows, mac or linux-->
 
 	<library name="songs" preload="true" />
 
@@ -79,6 +82,7 @@
 	<haxelib name="flxanimate"/>
 	<haxelib name="grig.audio" />
 	<haxelib name="funkin.vis" />
+	<haxelib name="extension-androidtools" if="android" />
 
 	<haxedef name="FLX_NO_FOCUS_LOST_SCREEN" />
 	<haxedef name="FLX_NO_DEBUG" unless="debug" />
@@ -90,6 +94,7 @@
 	
 	<haxedef name="HXCPP_STACK_LINE"/>
 	<haxedef name="HXCPP_STACK_TRACE"/>
+	<haxedef name="HXCPP_CHECK_POINTER" />
 	<haxedef name="hscriptPos" />
 
 	<!-- Configure Polymod -->
@@ -125,6 +130,16 @@
 	<haxeflag name="--macro" value="include('scripting')" />
 	<haxeflag name="--macro" value="include('ui')" />
 	<haxeflag name="--macro" value="include('util')" />
+
+	<section if="android">
+		<config>
+			<!--Gradle-->
+			<!--<android gradle-version="7.4.2" gradle-plugin="7.3.1" />--> <!-- ENABLE THIS IF YOU HAVE ISSUES AT COMPILE -->
+
+			<!--Target SDK-->
+			<android min-sdk-version="16" target-sdk-version="29" max-sdk-version="33" if="${lime &lt; 8.1.0}"/>
+            </config>
+	</section>
 	
 
 	<!-- _________________________________ Custom _______________________________ -->

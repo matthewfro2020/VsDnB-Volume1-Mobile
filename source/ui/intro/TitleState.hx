@@ -144,6 +144,9 @@ class TitleState extends MusicBeatState
 			#end
 		}
 
+		if (FlxG.mobile && FlxG.touches.justReleased.length > 0)
+			pressedEnter = true;
+
 		if (pressEnter != null && pressedEnter && !transitioning)
 		{
 			FlxTween.tween(pressEnter, {'scale.x': 0, 'scale.y': 0, angle: 10}, 0.5, {ease: FlxEase.backInOut});
