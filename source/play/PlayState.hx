@@ -2153,6 +2153,7 @@ override public function update(elapsed:Float):Void {
             }
         }
 	}
+	}
 
 	/**
 	 * Changes gameplay depending on a note's current state (ones that may have been missed, pressed, etc).
