@@ -13,10 +13,6 @@ import modding.PolymodManager;
 
 import ui.intro.InitState;
 
-#if android
-import util.SUtil;
-#end
-
 #if desktop
 import api.ALSoftConfig; // Longest yeah boi ever
 #end
@@ -45,7 +41,6 @@ class Main extends Sprite
 	public function new()
 	{
 		super();
-		SUtil.uncaughtErrorHandler();
 		stage != null ? init() : addEventListener(Event.ADDED_TO_STAGE, init);
 	}
 
@@ -87,10 +82,6 @@ class Main extends Sprite
 
 		@:privateAccess
 		game._customSoundTray = GameSoundTray;
-
-		#if android
-		SUtil.checkFiles();
-		#end
 		addChild(game);
 		#if !mobile
 		addChild(fps);
