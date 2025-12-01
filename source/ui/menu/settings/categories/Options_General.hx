@@ -29,7 +29,7 @@ class Options_General extends SettingsCategory
 				Preferences.ghostTapping = value;
 			}
 		});
-		checkbox_ghostTapping.setChecked(Preferences.ghostTapping, false, true);
+        checkbox_ghostTapping.setChecked(Preferences.ghostTapping, false, true);
 		list.push(checkbox_ghostTapping);
 		add(checkbox_ghostTapping);
 
@@ -45,7 +45,23 @@ class Options_General extends SettingsCategory
 		list.push(checkbox_cutscenes);
 		add(checkbox_cutscenes);
 
-		var option_keybinds = new CallbackOption(400, 600, {
+        // ==========================================================
+        // ▶ BOTPLAY OPTION (NEW)
+        // ==========================================================
+		var checkbox_botplay = new CheckboxOption(400, 550, {
+			name: LanguageManager.getTextString('settings_general_botplay'),
+			description: LanguageManager.getTextString('settings_general_botplay_description'),
+			callback: function(value:Bool)
+			{
+				Preferences.botplay = value;
+			}
+		});
+		checkbox_botplay.setChecked(Preferences.botplay, false, true);
+		list.push(checkbox_botplay);
+		add(checkbox_botplay);
+        // ==========================================================
+
+		var option_keybinds = new CallbackOption(400, 650, {
 			name: LanguageManager.getTextString('settings_general_keybinds'),
 			description: LanguageManager.getTextString('settings_general_keybinds_description'),
 			callback: function()
