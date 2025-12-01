@@ -1,6 +1,6 @@
 # A way to individually do android builds instead of triggering the main branch.
 
-name: Android Build
+name: Mobile Build
 
 # Controls when the action will run.
 on:
@@ -72,3 +72,30 @@ jobs:
         with:
           name: androidBuild
           path: export/release/android/bin/app/build/outputs/apk/debug
+
+  buildIOS:
+    runs-on: macos-12
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4.1.7
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.4
+      # Runs a set of commands using the runners shell
+      - name: Install Haxelib
+        run: |
+          haxelib setup ~/haxelib
+          haxelib install hmm
+          haxelib run hmm install
+          
+      - name: Create Version Tag
+        run: echo "${{github.run_id}}" > VERSION
+      - name: Compile
+        run: haxelib run lime build ios --app-version="4.0.0-${{ github.run_id}}"
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iosBuild
+          path: export/release/ios/bin
