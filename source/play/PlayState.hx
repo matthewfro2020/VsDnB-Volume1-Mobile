@@ -219,7 +219,194 @@ class PlayState extends MusicBeatState
 	 * Changes the y position of all of the HUD elements based on this type.
 	 */
 	public var scrollType(default, set):String;
-	
+		
+public var botplayEnabled:Bool = false;
+private var botplayTxt:FlxText;
+public static var botplay:Bool = false;
+
+var botHeld:Array<Bool> = [false, false, false, false];
+
+public var playerStrumline:Strumline;
+public var cpuStrumline:Strumline;
+
+public var strumLineOpponent:Strumline;
+public var strumLinePlayer:Strumline;
+
+public var strumline:Strumline;
+
+private function botplayHit(note:Note)
+{
+    // Mark as hit
+    note.hasBeenHit = true;
+
+    // Internal scoring logic
+    playingStrumline.hitNote(note);
+
+    // Trigger player animation
+    if (playingChar != null)
+    {
+        playingChar.sing(note.direction);
+        playingChar.holdTimer = 0;
+    }
+}
+
+/**
+ * Auto-player for D&B engine (FULL + FIXED FOR SUSTAINS)
+ */
+public function botplayAutoHit()
+{
+    if (playerStrums == null)
+        return;
+
+    // Show BOTPLAY text
+    botplayTxt.visible = true;
+
+    // 1. ALL hittable "tap" notes
+    var possible:Array<Note> = playerStrums.getPossibleNotes();
+
+    // Sort closest → furthest
+    haxe.ds.ArraySort.sort(possible, function(a, b)
+    {
+        return Reflect.compare(
+            Math.abs(Conductor.instance.songPosition - a.strumTime),
+            Math.abs(Conductor.instance.songPosition - b.strumTime)
+        );
+    });
+
+    // ================================
+    //  TAP NOTES
+    // ================================
+    for (note in possible)
+    {
+        if (note == null) continue;
+        if (note.hasBeenHit) continue;
+
+        // SUSTAIN HEAD (first part)
+        if (note.sustainNote != null)
+        {
+            // Hit the head
+            playerStrums.pressKey(note.direction);
+            playerStrums.hitNote(note);
+            continue;
+        }
+
+        // NORMAL NOTE
+        playerStrums.pressKey(note.direction);
+        playerStrums.hitNote(note);
+        playerStrums.releaseKey(note.direction);
+    }
+
+    // ================================
+    //  SUSTAIN NOTE HOLDING
+    // ================================
+    playerStrums.forEachHoldNote(function(s:SustainNote)
+    {
+        if (s == null) return;
+
+        var now = Conductor.instance.songPosition;
+
+        // Sustain active window
+        var start = s.strumTime;
+        var end   = s.strumTime + s.fullSustainLength;
+
+        if (now >= start && now <= end)
+        {
+            // Hold key while inside sustain window
+            playerStrums.pressKey(s.direction);
+
+            if (!s.hasBeenHit)
+            {
+                s.hasBeenHit = true;
+                s.hasMissed = false;
+            }
+
+            // Play strum hold animation
+            playerStrums.strums.members[s.direction].holdConfirm();
+        }
+        else if (now > end)
+        {
+            // Release key when sustain ends
+            playerStrums.releaseKey(s.direction);
+        }
+    });
+}
+
+/**
+ * Automatically plays notes for the player strumline.
+ */
+ 
+public var strumlineOpponent:Strumline;
+public var strumlinePlayer:Strumline;
+
+function updateBotplay(elapsed:Float)
+{
+    if (!botplay) return;
+
+    // Your player strumline:
+    var pl:Strumline = strumlinePlayer; // adjust if player index differs
+
+    // Get all notes that are hittable
+    var possibleNotes:Array<Note> = pl.getPossibleNotes();
+
+    // Sort by closest to hit
+    possibleNotes.sort(function(a, b) {
+        return Reflect.compare(
+            Math.abs(Conductor.instance.songPosition - a.strumTime),
+            Math.abs(Conductor.instance.songPosition - b.strumTime)
+        );
+    });
+
+    // ---- HIT TAPS ----
+    for (note in possibleNotes)
+    {
+        if (note == null) continue;
+        if (note.hasBeenHit) continue;
+
+        // Tap note (no sustain)
+        if (note.sustainNote == null)
+        {
+            pl.pressKey(note.direction);
+            pl.hitNote(note);
+            pl.releaseKey(note.direction);
+        }
+        else
+        {
+            // HIT START OF HOLD
+            if (!note.sustainNote.hasBeenHit)
+            {
+                pl.pressKey(note.direction);
+                pl.hitNote(note);
+            }
+        }
+    }
+
+    // ---- HOLD SUSTAINS ----
+    pl.forEachHoldNote(function(hold:SustainNote)
+    {
+        if (hold == null) return;
+
+        var now = Conductor.instance.songPosition;
+
+        // Sustain active window
+        if (now >= hold.strumTime && now <= hold.strumTime + hold.fullSustainLength)
+        {
+            // keep key held
+            pl.pressKey(hold.direction);
+
+            if (!hold.hasBeenHit)
+            {
+                hold.hasBeenHit = true;
+                hold.hasMissed = false;
+            }
+        }
+        else
+        {
+            // release when finished
+            pl.releaseKey(hold.direction);
+        }
+    });
+}
+
 	function set_scrollType(value:String):String
 	{
 		if (dadStrums != null)
@@ -602,6 +789,9 @@ class PlayState extends MusicBeatState
 	var noteLimboFrames:Int;
 	var pressingKey5Global:Bool;
 
+
+	public var cpuControlled:Bool = false;
+
 	/**
 	 * Initalizes a new PlayState instance.
 	 * @param params The parameters to initalize PlayState with.
@@ -659,6 +849,17 @@ class PlayState extends MusicBeatState
 
 		initalizeUI();
 
+		var font:String = Paths.font("comic.ttf");
+
+		botplayTxt = new FlxText(healthBar.x + healthBar.width / 2 - 75, healthBar.y + (FlxG.save.data.downscroll ? 100 : -100), 0,
+		"BOTPLAY", 20);
+        botplayTxt.setFormat(Paths.font("comic.ttf"), 42, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		botplayTxt.scrollFactor.set();
+		botplayTxt.borderSize = 3;
+		botplayTxt.visible = botplay;
+        botplayTxt.cameras = [camHUD];
+		add(botplayTxt);
+
 		generateSong();
 
 		prepareSong();
@@ -670,151 +871,188 @@ class PlayState extends MusicBeatState
 		super.create();
 	}
 
-	override public function update(elapsed:Float):Void
+
+override public function update(elapsed:Float):Void {
+	super.update(elapsed);
+	
+    botplayTxt.visible = Preferences.botplay;
+
+	// ==============================
+	// ESC / ENTER Pause Handling
+	// ==============================
+	if ((isInCutscene && FlxG.keys.justPressed.ESCAPE) 
+	|| (FlxG.keys.justPressed.ENTER && Countdown.countdownStarted && canPause))
+		runPause();
+
+	// ==============================
+	// BOTPLAY INPUT CONTROLLER
+	// ==============================
+	if (!isInCutscene)
 	{
-		super.update(elapsed);
-
-		elapsedtime += elapsed;
-
-		if ((isInCutscene && FlxG.keys.justPressed.ESCAPE #if android || FlxG.android.justReleased.BACK #end) || (FlxG.keys.justPressed.ENTER #if android || FlxG.android.justReleased.BACK #end && Countdown.countdownStarted && canPause))
-			runPause();
-
-		if (FlxG.keys.justPressed.SEVEN)
+		if (botplay)
 		{
-			// Pressing seven will enable custom callback functionaility. 
-			// Cancelling it will allow custom behavior that isn't going to the chart editor.
-			// Not sure if this is necessary to warrant it's own script event.
-
-			var event = new ScriptEvent(PRESS_SEVEN, true);
-			dispatchEvent(event);
-			
-			if (event.eventCanceled)
-			{
-				return;
-			}
+            botplayTxt.visible = true;
+            botplayAutoHit();
 		}
-		
-		health = Math.min(health, 2);
-		healthLerp = FlxMath.lerp(healthLerp, health, 0.3);
-
-		iconSizeResetTime = Math.max(0, iconSizeResetTime - elapsed);
-
-		var iconLerp = FlxEase.quartIn(iconSizeResetTime / iconBopTime);
-
-		iconP1.setGraphicSize(Std.int(FlxMath.lerp(150, iconP1BopSize.x, iconLerp)), Std.int(FlxMath.lerp(150, iconP1BopSize.y, iconLerp)));
-		iconP1.updateHitbox();
-
-		iconP2.setGraphicSize(Std.int(FlxMath.lerp(150, iconP2BopSize.x, iconLerp)), Std.int(FlxMath.lerp(150, iconP2BopSize.y, iconLerp)));
-		iconP2.updateHitbox();
-
-		var iconOffset:Int = 26;
-		switch (healthBar?.bar?.fillDirection)
+		else
 		{
-			case LEFT_TO_RIGHT:
-				iconP1.x = (healthBar.x + healthBar.width) - (healthBar.width * (FlxMath.remapToRange(healthBar.percent, 0, 100, 100, 0) * 0.01) + iconOffset);
-				iconP2.x = (healthBar.x
-					+ healthBar.width)
-					- (healthBar.width * (FlxMath.remapToRange(healthBar.percent, 0, 100, 100, 0) * 0.01))
-					- (iconP2.width - iconOffset);
-			default:
-				iconP1.x = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthBar.percent, 0, 100, 100, 0) * 0.01) - iconOffset);
-				iconP2.x = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthBar.percent, 0, 100, 100, 0) * 0.01)) - (iconP2.width - iconOffset);
-		}
-		
-		switch (healthBar?.bar?.fillDirection)
-		{
-			case LEFT_TO_RIGHT:
-				iconP1.changeState(healthBar.percent > 80 ? 'losing' : 'normal');
-				iconP2.changeState(healthBar.percent < 20 ? 'losing' : 'normal');
-			default:
-				iconP1.changeState(healthBar.percent < 20 ? 'losing' : 'normal');
-				iconP2.changeState(healthBar.percent > 80 ? 'losing' : 'normal');
-		}
-		
-
-		if (FlxG.keys.pressed.CONTROL || FlxG.keys.pressed.SHIFT)
-		{
-			var controls:Array<Dynamic> = [[FlxKey.ONE, dad], [FlxKey.TWO, boyfriend], [FlxKey.THREE, gf]];
-			for (i in controls)
-			{
-				if (FlxG.keys.firstJustPressed() == i[0])
-				{
-					if (FlxG.keys.pressed.CONTROL)
-						FlxG.switchState(() -> new AnimationDebug(i[1]));
-					if (FlxG.keys.pressed.SHIFT)
-						FlxG.switchState(() -> new CharacterDebug(cast(i[1], Character).id));
-				}
-			}
+            botplayTxt.visible = false;
+            handleInputs();
 		}
 
-		#if debug
-		Conductor.instance.quickWatch();
-		if (FlxG.keys.justPressed.ONE)
-			endSong();
-
-		if (FlxG.keys.justPressed.TWO) // Go 10 seconds into the future :O
-		{
-			SoundController.music.pause();
-			vocals.pause();
-			Conductor.instance.songPosition += 10000;
-
-			for (strumLine in [playerStrums, dadStrums])
-			{
-				strumLine.clean();
-			}
-			SoundController.music.time = Conductor.instance.songPosition - Conductor.instance.offsets;
-			SoundController.music.play();
-
-			vocals.time = SoundController.music.time;
-			vocals.play();
-			Conductor.instance.update(Conductor.instance.songPosition);
-		}
-		#end
-
-		if (!paused && !isInCutscene)
-		{
-			if (startingSong)
-			{
-				if (Countdown.countdownStarted)
-				{
-					// This enables Conductor script events. 
-					// Don't apply offsets as they were already applied on the start of the Countdown.
-					Conductor.instance.update(Conductor.instance.songPosition + FlxG.elapsed * 1000, true, false);
-					if (Conductor.instance.songPosition >= 0.0 + Conductor.instance.offsets)
-					{
-						startSong();
-					}
-				}
-			}
-			else
-			{
-				Conductor.instance.update(Conductor.instance.songPosition + FlxG.elapsed * 1000, true, false);
-			}
-		}
-
-		if (camGameZoom.canWorldZoom)
-			FlxG.camera.zoom = MathUtil.smoothLerp(FlxG.camera.zoom, defaultCamZoom, elapsed, 0.75, 1 / 1000);
-		
-		if (camHUDZoom.canWorldZoom)
-			camHUD.zoom = MathUtil.smoothLerp(camHUD.zoom, defaultHUDZoom, elapsed, 0.75, 1 / 1000);
-
-		if (health <= 0 && !isPlayerDying)
-		{
-			gameOver();
-		}
-
-		playingStrumline.forEachNote(function(note:Note)
-		{
-			if (Conductor.instance.songPosition >= note.strumTime && !note.phoneHit && note.noteStyle == 'phone')
-			{
-				note.phoneHit = true;
-				dad.playAnim(dad.animation.getByName("singThrow") == null ? 'singSmash' : 'singThrow', true);
-			}
-		});
-		
-		handleInputs();
-		processNotes(elapsed);
 	}
+
+	// ==============================
+	// PRESS SEVEN (Debug Hooks)
+	// ==============================
+	if (FlxG.keys.justPressed.SEVEN)
+	{
+		var event = new ScriptEvent(PRESS_SEVEN, true);
+		dispatchEvent(event);
+
+		if (event.eventCanceled)
+			return;
+	}
+
+	// ==============================
+	// ICON BOP + HEALTH HANDLING
+	// ==============================
+	health = Math.min(health, 2);
+	healthLerp = FlxMath.lerp(healthLerp, health, 0.3);
+
+	iconSizeResetTime = Math.max(0, iconSizeResetTime - elapsed);
+	var iconLerp = FlxEase.quartIn(iconSizeResetTime / iconBopTime);
+
+	iconP1.setGraphicSize(
+		Std.int(FlxMath.lerp(150, iconP1BopSize.x, iconLerp)),
+		Std.int(FlxMath.lerp(150, iconP1BopSize.y, iconLerp))
+	);
+	iconP1.updateHitbox();
+
+	iconP2.setGraphicSize(
+		Std.int(FlxMath.lerp(150, iconP2BopSize.x, iconLerp)),
+		Std.int(FlxMath.lerp(150, iconP2BopSize.y, iconLerp))
+	);
+	iconP2.updateHitbox();
+
+	// icon positions
+	var iconOffset:Int = 26;
+	switch (healthBar?.bar?.fillDirection)
+	{
+		case LEFT_TO_RIGHT:
+			iconP1.x = (healthBar.x + healthBar.width)
+				- (healthBar.width * (FlxMath.remapToRange(healthBar.percent,0,100,100,0) * 0.01) + iconOffset);
+			iconP2.x = (healthBar.x + healthBar.width)
+				- (healthBar.width * (FlxMath.remapToRange(healthBar.percent,0,100,100,0) * 0.01))
+				- (iconP2.width - iconOffset);
+		default:
+			iconP1.x = healthBar.x 
+				+ (healthBar.width * (FlxMath.remapToRange(healthBar.percent,0,100,100,0) * 0.01) - iconOffset);
+			iconP2.x = healthBar.x 
+				+ (healthBar.width * (FlxMath.remapToRange(healthBar.percent,0,100,100,0) * 0.01))
+				- (iconP2.width - iconOffset);
+	}
+
+	// icon losing/normal
+	switch (healthBar?.bar?.fillDirection)
+	{
+		case LEFT_TO_RIGHT:
+			iconP1.changeState(healthBar.percent > 80 ? "losing" : "normal");
+			iconP2.changeState(healthBar.percent < 20 ? "losing" : "normal");
+		default:
+			iconP1.changeState(healthBar.percent < 20 ? "losing" : "normal");
+			iconP2.changeState(healthBar.percent > 80 ? "losing" : "normal");
+	}
+
+	// ==============================
+	// DEBUG KEYS (CTRL/SHIFT)
+	// ==============================
+	if (FlxG.keys.pressed.CONTROL || FlxG.keys.pressed.SHIFT)
+	{
+		var list:Array<Dynamic> = [
+			[FlxKey.ONE, dad],
+			[FlxKey.TWO, boyfriend],
+			[FlxKey.THREE, gf]
+		];
+		for (i in list)
+		{
+			if (FlxG.keys.firstJustPressed() == i[0])
+			{
+				if (FlxG.keys.pressed.CONTROL)
+					FlxG.switchState(() -> new AnimationDebug(i[1]));
+				if (FlxG.keys.pressed.SHIFT)
+					FlxG.switchState(() -> new CharacterDebug(i[1].id));
+			}
+		}
+	}
+
+	// ==============================
+	// CONDUCTOR UPDATE
+	// ==============================
+	if (!paused && !isInCutscene)
+	{
+		if (startingSong)
+		{
+			if (Countdown.countdownStarted)
+			{
+				Conductor.instance.update(
+					Conductor.instance.songPosition + FlxG.elapsed * 1000,
+					true, false
+				);
+				if (Conductor.instance.songPosition >= 0 + Conductor.instance.offsets)
+					startSong();
+			}
+		}
+		else
+		{
+			Conductor.instance.update(
+				Conductor.instance.songPosition + FlxG.elapsed * 1000,
+				true, false
+			);
+		}
+	}
+
+	// ==============================
+	// CAMERA ZOOMS
+	// ==============================
+	if (camGameZoom.canWorldZoom)
+		FlxG.camera.zoom = MathUtil.smoothLerp(
+			FlxG.camera.zoom, defaultCamZoom, elapsed, 0.75, 1 / 1000);
+
+	if (camHUDZoom.canWorldZoom)
+		camHUD.zoom = MathUtil.smoothLerp(
+			camHUD.zoom, defaultHUDZoom, elapsed, 0.75, 1 / 1000);
+
+	// ==============================
+	// GAME OVER
+	// ==============================
+	if (health <= 0 && !isPlayerDying)
+		gameOver();
+
+	// ==============================
+	// PHONE NOTES
+	// ==============================
+	playerStrums.forEachNote(function(note:Note) {
+		if (Conductor.instance.songPosition >= note.strumTime 
+		&& !note.phoneHit 
+		&& note.noteStyle == "phone")
+		{
+			note.phoneHit = true;
+			dad.playAnim(
+				dad.animation.getByName("singThrow") == null 
+					? "singSmash" 
+					: "singThrow",
+				true
+			);
+		}
+	});
+
+	// ==============================
+	// **Ensure BOTPLAY runs here**
+	// ==============================
+	if (Preferences.botplay)
+		botplayAutoHit();
+}
 
 	override function destroy():Void
 	{
@@ -1838,6 +2076,82 @@ class PlayState extends MusicBeatState
 				}
 			}
 		}
+	
+    // -----------------------------------------
+    // BOTPLAY OVERRIDE (no keybind logic)
+    // -----------------------------------------
+
+    var key5 = shapeNoteSongs.contains(currentSong.id.toLowerCase());
+
+    var pressingShape = key5;
+    if (pressingKey5Global != pressingShape)
+    {
+        pressingKey5Global = pressingShape;
+
+        playingStrumline.forEachStrum(function(strum:StrumNote)
+        {
+            strum.style = pressingShape ? 'shape' : strum.baseStyle;
+        });
+    }
+
+    playingStrumline.forEachStrum(function(strum:StrumNote)
+    {
+        strum.pressingKey5 = pressingShape;
+    });
+
+    // -----------------------------------------
+    // BOTPLAY AUTOMATIC NOTE HITTING
+    // -----------------------------------------
+    if (generatedMusic)
+    {
+        var possibleNotes:Array<Note> = playingStrumline.getPossibleNotes();
+
+        haxe.ds.ArraySort.sort(possibleNotes, function(a, b):Int
+        {
+            return Std.int(a.strumTime - b.strumTime);
+        });
+
+        if (possibleNotes.length > 0)
+        {
+            var lastHitNote:Int = -1;
+            var lastHitNoteTime:Float = -1;
+
+            for (note in possibleNotes)
+            {
+                // Wrong mode? (shape mode mismatch → limbo)
+                if ((note.noteStyle == "shape" && !pressingShape) ||
+                    (note.noteStyle != "shape" && pressingShape))
+                {
+                    noteLimbo = note;
+                    noteLimboFrames = 8;
+                    continue;
+                }
+
+                // Anti-jack logic
+                if (lastHitNoteTime > Conductor.instance.songPosition - Conductor.instance.safeZoneOffset &&
+                    lastHitNoteTime < Conductor.instance.songPosition + (Conductor.instance.safeZoneOffset * 0.08))
+                {
+                    if ((note.direction % 4) == (lastHitNote % 4))
+                    {
+                        lastHitNoteTime = -999999;
+                        continue;
+                    }
+                }
+
+                lastHitNote = note.direction;
+                lastHitNoteTime = note.strumTime;
+
+                // Perform a full hit check
+                playingStrumline.hitNote(note);
+
+                // Trigger player animations
+                if (playingChar != null)
+                {
+                    playingChar.sing(note.direction);
+                    playingChar.holdTimer = 0;
+                }
+            }
+        }
 	}
 
 	/**
