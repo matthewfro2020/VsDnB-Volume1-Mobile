@@ -111,7 +111,7 @@
 	
 	<!-- No Dead Code Elimination -->
 	<haxeflag name="-dce no" />
-
+		
 
 	<setenv name="next"/>
 	
@@ -130,6 +130,7 @@
 	<haxeflag name="--macro" value="include('scripting')" />
 	<haxeflag name="--macro" value="include('ui')" />
 	<haxeflag name="--macro" value="include('util')" />
+    <haxeflag name="--macro" value="macro.RenameNilMacro.run()"/>
 
 	<section if="android">
     	<config>
