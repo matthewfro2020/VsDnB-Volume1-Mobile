@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<postbuild command="haxe -cp tools -main RenameNilFix --run RenameNilFix"/>
 </project>
 
 	<!-- _________________________ Application Settings _________________________ -->
@@ -155,11 +154,14 @@
 	
 	<icon path="art/icons/dave16.png" size='16'/>
 	<icon path="art/icons/dave32.png" size='32'/>
-	<icon path="art/icons/dave64.png" size='64'/>
-	<icon path="art/icons/dave.png"/>
+    <icon path="art/icons/dave64.png" size='64'/>
+    <icon path="art/icons/dave.png"/>
 
-	<!-- ________________________ Import Linux Stuff _____________________________ -->
-	<target id="haxe" tool="linker" if="linux">
-		<lib name="/usr/lib64/libX11.so" if="HXCPP_M64" />
-	</target>
+    <target id="haxe" tool="linker" if="linux">
+        <lib name="/usr/lib64/libX11.so" if="HXCPP_M64" />
+    </target>
+
+    <!-- Fix thx.Nil Objective-C++ conflict -->
+    <postbuild command="haxe -cp tools -main RenameNilFix --run RenameNilFix"/>
+
 </project>
