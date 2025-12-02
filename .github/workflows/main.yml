@@ -88,26 +88,20 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@master
         with:
           haxe-version: 4.3.6
 
-      ####################################################################
-      # >> FIX: Install Android SDK + NDK properly
-      ####################################################################
-
       - name: Install Android SDK + NDK
         if: startsWith(matrix.os, 'ubuntu')
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@v3
         with:
           api-level: 33
           ndk: 25.1.8937393
           cmake: 3.22.1
-
-      ####################################################################
 
       - name: Install Libraries
         run: |
@@ -129,10 +123,6 @@ jobs:
           haxelib install hmm
           haxelib run hmm install
 
-      ####################################################################
-      # >> FIX: Correct Android NDK + SDK configuration
-      ####################################################################
-
       - name: Configure Android
         if: startsWith(matrix.os, 'ubuntu')
         run: |
@@ -141,15 +131,13 @@ jobs:
           haxelib run lime config JAVA_HOME $JAVA_HOME_17_X64
           haxelib run lime config ANDROID_SETUP true
 
-      ####################################################################
-
       - name: Compile (Android)
         if: startsWith(matrix.os, 'ubuntu')
         run: haxelib run lime build android -D officialBuild -ONLY_ARMV7
 
       - name: Compile (iOS)
         if: startsWith(matrix.os, 'macos')
-        run: haxelib run lime build ios -nosign -D officialBuild -nosign
+        run: haxelib run lime build ios -nosign -D officialBuild
 
       - name: Make IPA
         if: startsWith(matrix.os, 'macos')
@@ -161,14 +149,14 @@ jobs:
 
       - name: Upload Artifact (Android)
         if: startsWith(matrix.os, 'ubuntu')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: androidBuild
           path: export/release/android/bin/app/build/outputs/apk/release/*.apk
 
       - name: Upload Artifact (iOS)
         if: startsWith(matrix.os, 'macos')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: iOSBuild
           path: export/release/ios/build/Release-iphoneos/*.ipa
