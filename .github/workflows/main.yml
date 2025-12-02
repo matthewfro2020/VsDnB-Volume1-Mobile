@@ -1,22 +1,22 @@
 name: Main
 
-# Controls when the action will run.
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
 jobs:
   Desktop:
-    runs-on: ${{matrix.os}}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
+
     steps:
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v3
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@master
@@ -45,7 +45,7 @@ jobs:
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
           haxelib install hmm
           haxelib run hmm install
-      
+
       - name: Compile (Windows)
         if: startsWith(matrix.os, 'windows')
         run: haxelib run lime build windows -D officialBuild
@@ -60,49 +60,54 @@ jobs:
 
       - name: Upload Artifact (Windows)
         if: startsWith(matrix.os, 'windows')
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v3
         with:
           name: windowsBuild
-          path: export\release\windows\bin\*
-          if-no-files-found: error
+          path: export/release/windows/bin/*
 
       - name: Upload Artifact (Linux)
         if: startsWith(matrix.os, 'ubuntu')
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v3
         with:
           name: linuxBuild
           path: export/release/linux/bin/*
-          if-no-files-found: error
 
-      - name: Upload Artifact (macOS 12)
-        if: matrix.os == 'macos-12'
-        uses: actions/upload-artifact@main
+      - name: Upload Artifact (macOS)
+        if: startsWith(matrix.os, 'macos')
+        uses: actions/upload-artifact@v3
         with:
-          name: macOSBuild-x86_64
+          name: macOSBuild
           path: export/release/macos/bin/*
-          if-no-files-found: error
 
-      - name: Upload Artifact (macOS latest)
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@main
-        with:
-          name: macOSBuild-arm64
-          path: export/release/macos/bin/*
-          if-no-files-found: error
   Mobile:
-    runs-on: ${{matrix.os}}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+
     steps:
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v3
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@master
         with:
           haxe-version: 4.3.6
+
+      ####################################################################
+      # >> FIX: Install Android SDK + NDK properly
+      ####################################################################
+
+      - name: Install Android SDK + NDK
+        if: startsWith(matrix.os, 'ubuntu')
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 33
+          ndk: 25.1.8937393
+          cmake: 3.22.1
+
+      ####################################################################
 
       - name: Install Libraries
         run: |
@@ -120,44 +125,50 @@ jobs:
           haxelib install hscript-iris
           haxelib install hxvlc
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+          haxelib install extension-androidtools
           haxelib install hmm
           haxelib run hmm install
-          haxelib install extension-androidtools
+
+      ####################################################################
+      # >> FIX: Correct Android NDK + SDK configuration
+      ####################################################################
 
       - name: Configure Android
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          haxelib run lime config ANDROID_SDK $ANDROID_HOME
-          haxelib run lime config ANDROID_NDK_ROOT $ANDROID_NDK_LATEST_HOME
+          haxelib run lime config ANDROID_SDK $ANDROID_SDK_ROOT
+          haxelib run lime config ANDROID_NDK_ROOT $ANDROID_NDK_ROOT
           haxelib run lime config JAVA_HOME $JAVA_HOME_17_X64
           haxelib run lime config ANDROID_SETUP true
+
+      ####################################################################
+
       - name: Compile (Android)
         if: startsWith(matrix.os, 'ubuntu')
-        run: haxelib run lime build android -ONLY_ARMV7 -D officialBuild
+        run: haxelib run lime build android -D officialBuild -ONLY_ARMV7
 
       - name: Compile (iOS)
         if: startsWith(matrix.os, 'macos')
-        run: haxelib run lime build ios -nosign -D officialBuild
+        run: haxelib run lime build ios -nosign -D officialBuild -nosign
 
-      - name: Make Ipa
+      - name: Make IPA
         if: startsWith(matrix.os, 'macos')
         run: |
           cd export/release/ios/build/*-iphoneos
           mkdir Payload
           mv *.app Payload
           zip -r VsDave.ipa Payload
+
       - name: Upload Artifact (Android)
         if: startsWith(matrix.os, 'ubuntu')
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v3
         with:
           name: androidBuild
           path: export/release/android/bin/app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
 
       - name: Upload Artifact (iOS)
         if: startsWith(matrix.os, 'macos')
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v3
         with:
           name: iOSBuild
           path: export/release/ios/build/Release-iphoneos/*.ipa
-          if-no-files-found: error
