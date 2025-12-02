@@ -9,20 +9,12 @@
 
 	<!-- ____________________________ Window Settings ___________________________ -->
 
-	<!--These window settings apply to all targets-->
 	<window width="1280" height="720" fps="120" hardware="true" vsync="true" background="0x0000ffff"/>
-
-	<!--HTML5-->
 	<window if="html5" resizable="true"/>
-
-	<!--Desktop-->
 	<window if="desktop" hardware="true" allow-shaders="true" require-shaders="true" orientation="landscape" fullscreen="false" resizable="true" vsync="false"/>
+	<window if="mac" orientation="auto" fullscreen="false" resizable="true" vsync="false" allow-high-dpi="true"/>
+	<window if="mobile" orientation="landscape" fullscreen="true" resizable="false" allow-shaders="true" require-shaders="true" allow-high-dpi="true"/>
 
-	<!--macOS-->
-	<window if="mac" orientation="auto" fullscreen="false" resizable="true" vsync="false" allow-high-dpi="true" />
-
-	<!--Mobile-->
-	<window if="mobile" orientation="landscape" fullscreen="true" resizable="false" allow-shaders="true" require-shaders="true" allow-high-dpi="true" />
 	<!-- _____________________________ Path Settings ____________________________ -->
 
 	<classpath name="source" />
@@ -31,18 +23,18 @@
 	<set name="BUILD_DIR" value="export/release" unless="debug" />
 	<set name="BUILD_DIR" value="export/32bit" if="32bit" />
 
-	<define name="mobileC" if="mobile" /> <!--Can be added windows, mac or linux-->
+	<define name="mobileC" if="mobile" />
 
 	<assets path="assets/preload" rename="assets" exclude="*.ogg" if="web"/>
 	<assets path="assets/preload" rename="assets" exclude="*.mp3" unless="web"/>
 	<assets path="assets/preload/videos" rename="assets/videos" include="*.mp4" embed='false' />
-	<assets path="assets/songs"    library="songs"    exclude="*.ogg" if="web"/>
-	<assets path="assets/songs"    library="songs"    exclude="*.mp3" unless="web"/>
-	<assets path="assets/shared"   library="shared"   exclude="*.ogg" if="web"/>
-	<assets path="assets/shared"   library="shared"   exclude="*.mp3" unless="web"/>
-	<assets path='art/readme.txt' rename='PLEASE READ.txt' />
-	<assets path='art/icons' rename='icons' embed='true'/>
-	<assets path="assets/fonts" embed='true'/>
+	<assets path="assets/songs" library="songs" exclude="*.ogg" if="web"/>
+	<assets path="assets/songs" library="songs" exclude="*.mp3" unless="web"/>
+	<assets path="assets/shared" library="shared" exclude="*.ogg" if="web"/>
+	<assets path="assets/shared" library="shared" exclude="*.mp3" unless="web"/>
+	<assets path="art/readme.txt" rename="PLEASE READ.txt" />
+	<assets path="art/icons" rename="icons" embed="true"/>
+	<assets path="assets/fonts" embed="true"/>
 	<assets path="mobile" rename="assets/mobile" if="mobileC" />
 
 	<define name="SHADERS_ENABLED"/>
@@ -52,24 +44,17 @@
 	<library name="songs" preload="true" />
 
 	<section if="PRELOAD_ALL">
-		<library name="shared"   preload="true" />
-	</section>
-	
-	<section if="NO_PRELOAD_ALL">
-		<library name="songs"    preload="false" />
-		<library name="shared"   preload="false" />
+		<library name="shared" preload="true" />
 	</section>
 
-	<!-- OpenAL config -->
- 
-	<section if="desktop">
-	 	<assets path="alsoft.txt" rename="plugins/alsoft.ini" type="text" if="windows"/>
-		<assets path="alsoft.txt" rename="plugins/alsoft.conf" type="text" unless="windows"/>
+	<section if="NO_PRELOAD_ALL">
+		<library name="songs" preload="false" />
+		<library name="shared" preload="false" />
 	</section>
 
 	<!-- _______________________________ Libraries ______________________________ -->
 
-	<haxedev set='webgl' />
+	<haxedev set="webgl" />
 
 	<haxelib name="flixel" />
 	<haxelib name="flixel-addons" />
@@ -78,46 +63,39 @@
 	<haxelib name="hscript" />
 	<haxelib name="polymod" />
 	<haxelib name="json2object" />
-	<haxelib name="hxdiscord_rpc" if="desktop"/>
-	<haxelib name="flxanimate"/>
+	<haxelib name="hxdiscord_rpc" if="desktop" />
+	<haxelib name="flxanimate" />
 	<haxelib name="grig.audio" />
 	<haxelib name="funkin.vis" />
 
+	<!-- REMOVED because it no longer exists in modern Lime -->
+	<!-- <haxelib name="extension-androidtools" if="android" /> -->
+
 	<haxedef name="FLX_NO_FOCUS_LOST_SCREEN" />
 	<haxedef name="FLX_NO_DEBUG" unless="debug" />
-	<!--<haxelib name="hxcpp-debug-server" if="debug"/>-->
 	<haxedef name="NAPE_RELEASE_BUILD" unless="debug" />
-	
-	<!--Allow working memory greater than 1 Gig, therefore preventing the mod on slower hardware with less ram to lag-->
+
 	<haxedef name="HXCPP_GC_BIG_BLOCKS"/>
-	
 	<haxedef name="HXCPP_STACK_LINE"/>
 	<haxedef name="HXCPP_STACK_TRACE"/>
 	<haxedef name="HXCPP_CHECK_POINTER" />
 	<haxedef name="hscriptPos" />
 
-	<!-- Configure Polymod -->
 	<haxedef name="POLYMOD_SCRIPT_EXT" value=".hx" />
 	<haxedef name="POLYMOD_SCRIPT_LIBRARY" value="scripts" />
 	<haxedef name="POLYMOD_ROOT_PATH" value="scripts/" />
-
 	<haxedef name="POLYMOD_APPEND_FOLDER" value="_append/" />
 	<haxedef name="POLYMOD_MERGE_FOLDER" value="_merge/" />
 	<haxedef name="POLYMOD_MOD_METADATA_FILE" value="_polymod_meta.json" />
 	<haxedef name="POLYMOD_MOD_ICON_FILE" value="_polymod_icon.png/" />
-	
+
 	<haxedef name="openfl-enable-handle-error" />
-	
-	<!-- No Dead Code Elimination -->
+
 	<haxeflag name="-dce no" />
-		
 
 	<setenv name="next"/>
-	
-	<!-- Build macro for FlxBasic -->
-	<haxeflag name="--macro" value="addMetadata('@:build(util.macro.FlxMacro.buildFlxBasic())', 'flixel.FlxBasic')" />
 
-	<!-- Ensure most to all packages are included at runtime. -->
+	<haxeflag name="--macro" value="addMetadata('@:build(util.macro.FlxMacro.buildFlxBasic())', 'flixel.FlxBasic')" />
 	<haxeflag name="--macro" value="include('api')" />
 	<haxeflag name="--macro" value="include('audio')" />
 	<haxeflag name="--macro" value="include('backend')" />
@@ -130,37 +108,44 @@
 	<haxeflag name="--macro" value="include('ui')" />
 	<haxeflag name="--macro" value="include('util')" />
 
-	<section if="android">
-    	<config>
-        	<android gradle-version="7.4.2" gradle-plugin="7.3.1"/>
-        	<android platform="android-35"/>
-        	<android min-sdk-version="16" target-sdk-version="30" max-sdk-version="33"/>
-        	<android bundle="false"/>
+	<!-- ________ ANDROID CONFIG (no extension-androidtools needed) ________ -->
 
-        	<!-- Only compile 64-bit (arm64-v8a) -->
-        	<android abi="arm64-v8a"/>
-    	</config>
+	<section if="android">
+		<config>
+			<android gradle-version="7.4.2" gradle-plugin="7.3.1"/>
+			<android platform="android-35"/>
+			<android min-sdk-version="16" target-sdk-version="30" max-sdk-version="33"/>
+			<android bundle="false"/>
+			<android abi="arm64-v8a"/>
+		</config>
 	</section>
+
+	<!-- ________ FIX NIL FOR iOS & macOS 100% RELIABLE ________ -->
 
 	<section if="ios">
-		<define name='objc' />
-		<ios linker-flags='-ObjC' />
+		<define name="objc" />
+		<ios linker-flags="-ObjC" />
+		<!-- Prevent Objective-C++ 'Nil' conflict -->
+		<haxeflag name="-D" value="HXCPP_NO_NIL" />
 	</section>
 
-	<!-- _________________________________ Custom _______________________________ -->
+	<section if="mac">
+		<!-- Prevent macOS Clang from picking up ObjC Nil -->
+		<haxeflag name="-D" value="HXCPP_NO_NIL" />
+	</section>
 
-	<!--Place custom nodes like icons here (higher priority to override the HaxeFlixel icon)-->
-	
-	<icon path="art/icons/dave16.png" size='16'/>
-	<icon path="art/icons/dave32.png" size='32'/>
-    <icon path="art/icons/dave64.png" size='64'/>
-    <icon path="art/icons/dave.png"/>
+	<!-- _________________________________ Custom Icons _______________________________ -->
 
-    <target id="haxe" tool="linker" if="linux">
-        <lib name="/usr/lib64/libX11.so" if="HXCPP_M64" />
-    </target>
+	<icon path="art/icons/dave16.png" size="16"/>
+	<icon path="art/icons/dave32.png" size="32"/>
+	<icon path="art/icons/dave64.png" size="64"/>
+	<icon path="art/icons/dave.png"/>
 
-    <!-- Fix thx.Nil Objective-C++ conflict -->
-    <postbuild command="haxe -cp tools -main RenameNilFix --run RenameNilFix"/>
+	<target id="haxe" tool="linker" if="linux">
+		<lib name="/usr/lib64/libX11.so" if="HXCPP_M64" />
+	</target>
+
+	<!-- REMOVE postbuild Nil patch (no longer needed) -->
+	<!-- <postbuild command="haxe -cp tools -main RenameNilFix --run RenameNilFix"/> -->
 
 </project>
