@@ -12,10 +12,9 @@ class RenameNilFix {
 
         for (dir in dirs) {
             if (FileSystem.exists(dir)) {
-                renameIfExists(dir + "Nil.h", dir + "ThxNil.h");
+                renameIfExists(dir + "Nil.h",  dir + "ThxNil.h");
                 renameIfExists(dir + "Nil.cpp", dir + "ThxNil.cpp");
-
-                // Patch include statements
+                
                 patchIncludes(dir + "ThxNil.h");
                 patchIncludes(dir + "ThxNil.cpp");
             }
@@ -32,6 +31,7 @@ class RenameNilFix {
         if (!FileSystem.exists(path)) return;
 
         var txt = File.getContent(path);
+
         txt = StringTools.replace(txt, "Nil.h", "ThxNil.h");
         txt = StringTools.replace(txt, "Nil.cpp", "ThxNil.cpp");
         txt = StringTools.replace(txt, "Nil_obj", "ThxNil_obj");
