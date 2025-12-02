@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <project>
 
-    <!-- GLOBAL FIX: Prevent thx.Nil from conflicting with Objective-C Nil -->
-    <haxedef name="HXCPP_NO_NIL"/>
-
     <!-- _________________________ Application Settings _________________________ -->
 
     <app title="VS. Dave and Bambi"
@@ -58,11 +55,7 @@
     <define name="NO_PRELOAD_ALL" unless="PRELOAD_ALL"/>
 
     <library name="songs" preload="true"/>
-
-    <section if="PRELOAD_ALL">
-        <library name="shared" preload="true"/>
-    </section>
-
+    <section if="PRELOAD_ALL"><library name="shared" preload="true"/></section>
     <section if="NO_PRELOAD_ALL">
         <library name="songs" preload="false"/>
         <library name="shared" preload="false"/>
@@ -84,10 +77,6 @@
     <haxelib name="grig.audio"/>
     <haxelib name="funkin.vis"/>
 
-    <!-- Removed: extension-androidtools (does NOT exist anymore) -->
-    <!-- <haxelib name="extension-androidtools" if="android"/> -->
-
-    <!-- Misc flags -->
     <haxedef name="FLX_NO_FOCUS_LOST_SCREEN"/>
     <haxedef name="FLX_NO_DEBUG" unless="debug"/>
     <haxedef name="NAPE_RELEASE_BUILD" unless="debug"/>
@@ -108,8 +97,6 @@
 
     <haxedef name="openfl-enable-handle-error"/>
     <haxeflag name="-dce no"/>
-
-    <setenv name="next"/>
 
     <!-- Macros -->
     <haxeflag name="--macro" value="addMetadata('@:build(util.macro.FlxMacro.buildFlxBasic())', 'flixel.FlxBasic')"/>
@@ -133,15 +120,23 @@
             <android platform="android-35"/>
             <android min-sdk-version="16" target-sdk-version="30" max-sdk-version="33"/>
             <android bundle="false"/>
-            <android abi="arm64-v8a"/>
+            <android abi="armeabi-v7a"/>
         </config>
+
+        <!-- Fix ARMv7 / NDK 23+ -->
+        <haxeflag name="-D" value="HXCPP_NO_PCH"/>
     </section>
 
-    <!-- ___________________________ iOS CONFIG ___________________________ -->
+    <!-- ___________________________ IOS / MAC NIL FIX _________________________ -->
 
     <section if="ios">
         <define name="objc"/>
         <ios linker-flags="-ObjC"/>
+        <haxeflag name="-D" value="cpp_no_nil"/>
+    </section>
+
+    <section if="mac">
+        <haxeflag name="-D" value="cpp_no_nil"/>
     </section>
 
     <!-- _________________________________ Icons _______________________________ -->
@@ -151,7 +146,6 @@
     <icon path="art/icons/dave64.png" size="64"/>
     <icon path="art/icons/dave.png"/>
 
-    <!-- Linux fix -->
     <target id="haxe" tool="linker" if="linux">
         <lib name="/usr/lib64/libX11.so" if="HXCPP_M64"/>
     </target>
