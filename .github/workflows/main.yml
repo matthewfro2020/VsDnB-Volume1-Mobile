@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@master
@@ -60,21 +60,21 @@ jobs:
 
       - name: Upload Artifact (Windows)
         if: startsWith(matrix.os, 'windows')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windowsBuild
           path: export/release/windows/bin/*
 
       - name: Upload Artifact (Linux)
         if: startsWith(matrix.os, 'ubuntu')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linuxBuild
           path: export/release/linux/bin/*
 
       - name: Upload Artifact (macOS)
         if: startsWith(matrix.os, 'macos')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macOSBuild
           path: export/release/macos/bin/*
@@ -88,7 +88,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@master
@@ -101,7 +101,7 @@ jobs:
 
       - name: Install Android SDK + NDK
         if: startsWith(matrix.os, 'ubuntu')
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           api-level: 33
           ndk: 25.1.8937393
@@ -161,14 +161,14 @@ jobs:
 
       - name: Upload Artifact (Android)
         if: startsWith(matrix.os, 'ubuntu')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: androidBuild
           path: export/release/android/bin/app/build/outputs/apk/release/*.apk
 
       - name: Upload Artifact (iOS)
         if: startsWith(matrix.os, 'macos')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: iOSBuild
           path: export/release/ios/build/Release-iphoneos/*.ipa
